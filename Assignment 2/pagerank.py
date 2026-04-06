@@ -103,7 +103,6 @@ plt.xlabel("Iteration")
 plt.ylabel("Rank Score Difference")
 plt.title("PageRank Convergence - web-Google_10k.txt")
 plt.grid(True)
-plt.savefig("convergence_10k.png", dpi=150)
 plt.show()
 
 top10 = sorted(PR.items(), key=lambda x: x[1], reverse=True)[:10]
