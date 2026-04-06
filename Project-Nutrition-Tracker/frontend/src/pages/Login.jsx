@@ -1,14 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../API";
 
 function App() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleSignIn = (e) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
-    console.log("Sign in:", { username, password });
+    try {
+      const res = await API.post("/login", { username, password });
+      console.log("User data:", res.data.user);
+      navigate("/dashboard");
+    } catch (err) {
+      if (err.response?.data?.detail) {
+        alert(err.response.data.detail);
+      } else {
+        alert("Something went wrong");
+      }
+    }
   };
 
   const handleCreateAccount = () => {

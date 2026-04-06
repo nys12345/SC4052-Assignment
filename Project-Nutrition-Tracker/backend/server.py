@@ -32,8 +32,14 @@ def init_db():
             password TEXT NOT NULL,
             age INTEGER,
             gender TEXT,
+            height REAL,
             weight REAL,
-            goal TEXT
+            activityLevel TEXT,
+            goal TEXT,
+            bmi REAL,
+            bmr INTEGER,
+            tdee INTEGER,
+            dailyCalories INTEGER
         )
     """)
     conn.commit()
@@ -49,7 +55,9 @@ class SignUpRequest(BaseModel):
     password: str
     age: int
     gender: str
+    height: float
     weight: float
+    activityLevel: str
     goal: str
 
 class LoginRequest(BaseModel):
@@ -81,11 +89,16 @@ def signup(req: SignUpRequest):
     if existing:
         conn.close()
         raise HTTPException(status_code=400, detail="Username already taken")
+    
+    bmi = calculate_bmi(req.weight, req.height)
+    bmr = calculate_bmr(req.weight, req.height, req.age, req.gender)
+    tdee = calculate_tdee(bmr, req.activityLevel)
+    daily_calories = calculate_calories(tdee, req.goal)
 
-    # Insert new user
+    # Insert new user into database
     conn.execute(
-        "INSERT INTO users (username, password, age, gender, weight, goal) VALUES (?, ?, ?, ?, ?, ?)",
-        (req.username, hash_password(req.password), req.age, req.gender, req.weight, req.goal)
+        "INSERT INTO users (username, password, age, gender, height, weight, activityLevel, goal, bmi, bmr, tdee, dailyCalories) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (req.username, hash_password(req.password), req.age, req.gender, req.height, req.weight, req.activityLevel, req.goal, bmi, bmr, tdee, daily_calories)
     )
     conn.commit()
     conn.close()
@@ -112,8 +125,14 @@ def login(req: LoginRequest):
             "username": user["username"],
             "age": user["age"],
             "gender": user["gender"],
+            "height": user["height"],
             "weight": user["weight"],
-            "goal": user["goal"]
+            "activityLevel": user["activityLevel"],
+            "goal": user["goal"],
+            "bmi": user["bmi"],
+            "bmr": user["bmr"],
+            "tdee": user["tdee"],
+            "dailyCalories": user["dailyCalories"]
         }
     }
 
@@ -133,3 +152,37 @@ def analyze(req: AnalyzeRequest):
             "Balanced macro split for your goals"
         ]
     }
+
+# Calculate BMI, BMR, and TDEE
+def calculate_bmi(weight, height):
+    height_m = height / 100
+    return round(weight / (height_m ** 2), 1)
+
+# BMR calculation using Mifflin-St Jeor Equation
+def calculate_bmr(weight, height, age, gender):
+    if gender == "male":
+        return round(10 * weight + 6.25 * height - 5 * age + 5)
+    elif gender == "female":
+        return round(10 * weight + 6.25 * height - 5 * age - 161)
+    else:
+        male_bmr = 10 * weight + 6.25 * height - 5 * age + 5
+        female_bmr = 10 * weight + 6.25 * height - 5 * age - 161
+        return round((male_bmr + female_bmr) / 2)
+
+def calculate_tdee(bmr, activity_level):
+    multipliers = {
+        "sedentary": 1.2,
+        "light": 1.375,
+        "moderate": 1.55,
+        "very_active": 1.725,
+    }
+    return round(bmr * multipliers.get(activity_level, 1.2))
+
+def calculate_calories(tdee, goal):
+    adjustments = {
+        "lose_weight": -500,
+        "maintain": 0,
+        "gain_muscle": 300,
+        "gain_weight": 500,
+    }
+    return round(tdee + adjustments.get(goal, 0))
