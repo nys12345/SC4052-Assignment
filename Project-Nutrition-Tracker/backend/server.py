@@ -6,6 +6,7 @@ import hashlib
 
 app = FastAPI()
 
+# Run with: uvicorn server:app --reload
 # Allow frontend to connect
 app.add_middleware(
     CORSMiddleware,
@@ -42,6 +43,20 @@ def init_db():
             dailyCalories INTEGER
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS meal_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            meal_name TEXT NOT NULL,
+            calories INTEGER,
+            protein REAL,
+            carbs REAL,
+            fat REAL,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -66,13 +81,8 @@ class LoginRequest(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     meal: str
-
-
-# --- Helper ---
-
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
-
+    user_id: int
+    date: str
 
 # --- Routes ---
 
@@ -138,20 +148,39 @@ def login(req: LoginRequest):
 
 @app.post("/analyze")
 def analyze(req: AnalyzeRequest):
-    # Mock response for now - will replace with AI later
-    return {
-        "meal": req.meal,
+    # TODO: Replace with actual LLM call
+    result = {
+        "meal_name": req.meal,
         "calories": 550,
-        "protein": 35,
-        "carbs": 60,
-        "fat": 18,
-        "fiber": 8,
-        "suggestions": [
-            "Good protein content for muscle maintenance",
-            "Consider adding more vegetables for micronutrients",
-            "Balanced macro split for your goals"
-        ]
+        "protein": 35.0,
+        "carbs": 60.0,
+        "fat": 18.0,
     }
+
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO meal_logs (user_id, date, meal_name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (req.user_id, req.date, result["meal_name"], result["calories"], result["protein"], result["carbs"], result["fat"])
+    )
+    conn.commit()
+    conn.close()
+
+    return result
+
+@app.get("/meals")
+def get_meals(user_id: int, date: str):
+    conn = get_db()
+    meals = conn.execute(
+        "SELECT * FROM meal_logs WHERE user_id = ? AND date = ?",
+        (user_id, date)
+    ).fetchall()
+    conn.close()
+    return [dict(m) for m in meals]
+
+# --- Helper ---
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 # Calculate BMI, BMR, and TDEE
 def calculate_bmi(weight, height):

@@ -11,7 +11,7 @@ function App() {
     e.preventDefault();
     try {
       const res = await API.post("/login", { username, password });
-      console.log("User data:", res.data.user);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/dashboard");
     } catch (err) {
       if (err.response?.data?.detail) {
@@ -20,10 +20,6 @@ function App() {
         alert("Something went wrong");
       }
     }
-  };
-
-  const handleCreateAccount = () => {
-    console.log("Navigate to create account");
   };
 
   const handleGuest = () => {
