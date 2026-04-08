@@ -153,10 +153,7 @@ function ProgressCalendar({ loggedDays = [], selectedDate, onSelectDate, today }
               }}
               className={`
                 relative aspect-square flex items-center justify-center rounded-lg text-[11px] transition-colors cursor-pointer
-                ${logged
-                  ? "bg-indigo-600/20 text-indigo-300 font-medium"
-                  : "text-gray-500 hover:bg-gray-800/50"
-                }
+                hover:bg-gray-800/50
                 ${todayMark ? "ring-2 ring-indigo-500/50" : ""}
                 ${`${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}` === selectedDate
                   ? "bg-gray-800/50"
@@ -164,10 +161,14 @@ function ProgressCalendar({ loggedDays = [], selectedDate, onSelectDate, today }
                 }
               `}
             >
-              {day}
-              {logged && (
-                <div className="absolute bottom-0.5 w-1 h-1 rounded-full bg-indigo-400" />
-              )}
+              <span
+                className={`
+                  w-6 h-6 flex items-center justify-center rounded-full leading-none text-center
+                  ${logged ? "bg-indigo-600/30 text-indigo-300 font-medium" : "text-gray-500"}
+                `}
+              >
+                {day}
+              </span>
             </div>
           );
         })}
@@ -267,10 +268,9 @@ function ProfileCard({ user }) {
 // ════════════════════════════════════════════════════════════
 export default function Sidebar({ user, consumed = 0, loggedDays = [], selectedDate, onSelectDate, today }) {
   return (
-    <aside className="flex-1 min-w-0 space-y-4">
+    <aside className="flex-1 min-w-0 space-y-6">
       <ProfileCard user={user} />
       {/* <BMIGauge bmi={user.bmi} /> */}
-      {/* <CalorieIntake consumed={consumed} target={user.dailyCalories} /> */}
       <ProgressCalendar loggedDays={loggedDays} selectedDate={selectedDate} onSelectDate={onSelectDate} today={today} />
     </aside>
   );

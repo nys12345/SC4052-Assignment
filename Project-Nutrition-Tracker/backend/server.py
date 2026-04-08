@@ -177,6 +177,51 @@ def get_meals(user_id: int, date: str):
     conn.close()
     return [dict(m) for m in meals]
 
+@app.get("/logged-days")
+def get_logged_days(user_id: int):
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT DISTINCT date FROM meal_logs WHERE user_id = ?",
+        (user_id,)
+    ).fetchall()
+    conn.close()
+    return [row["date"] for row in rows]
+
+@app.post("/mock")
+def add_mock_data(user_id: int):
+    from datetime import date, timedelta
+    import random
+
+    meals = [
+        ("Nasi Lemak with Egg", 550, 18, 65, 24),
+        ("Chicken Rice", 650, 35, 80, 15),
+        ("Protein Shake", 200, 30, 10, 5),
+        ("Mee Goreng", 480, 15, 60, 20),
+        ("Grilled Salmon with Rice", 600, 40, 50, 22),
+        ("Roti Prata with Curry", 450, 12, 55, 20),
+        ("Caesar Salad", 350, 25, 15, 22),
+        ("Banana Smoothie", 280, 8, 45, 8),
+        ("Eggs on Toast", 320, 20, 30, 14),
+        ("Laksa", 550, 22, 60, 25),
+    ]
+
+    conn = get_db()
+    today = date.today()
+
+    for days_ago in range(14):
+        d = (today - timedelta(days=days_ago)).isoformat()
+        num_meals = random.randint(2, 4)
+        chosen = random.sample(meals, num_meals)
+        for meal_name, cal, protein, carbs, fat in chosen:
+            conn.execute(
+                "INSERT INTO meal_logs (user_id, date, meal_name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (user_id, d, meal_name, cal, protein, carbs, fat)
+            )
+
+    conn.commit()
+    conn.close()
+    return {"message": f"Mock data added for last 14 days"}
+
 # --- Helper ---
 
 def hash_password(password: str) -> str:
