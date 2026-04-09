@@ -26,6 +26,8 @@ def get_db():
 
 def init_db():
     conn = get_db()
+
+    # user data
     conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,6 +45,8 @@ def init_db():
             dailyCalories INTEGER
         )
     """)
+
+    # meal logs
     conn.execute("""
         CREATE TABLE IF NOT EXISTS meal_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,6 +59,18 @@ def init_db():
             fat REAL,
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+
+    # food database
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS foods (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            calories INTEGER,
+            protein REAL,
+            carbs REAL,
+            fat REAL
         )
     """)
     conn.commit()
@@ -83,6 +99,16 @@ class AnalyzeRequest(BaseModel):
     meal: str
     user_id: int
     date: str
+
+class LogMealRequest(BaseModel):
+    user_id: int
+    date: str
+    meal_name: str
+    calories: int
+    protein: float
+    carbs: float
+    fat: float
+    meal_type: str
 
 # --- Routes ---
 
@@ -187,6 +213,17 @@ def get_logged_days(user_id: int):
     conn.close()
     return [row["date"] for row in rows]
 
+@app.post("/log-meal")
+def log_meal(req: LogMealRequest):
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO meal_logs (user_id, date, meal_name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (req.user_id, req.date, req.meal_name, req.calories, req.protein, req.carbs, req.fat)
+    )
+    conn.commit()
+    conn.close()
+    return {"message": "Meal logged"}
+
 @app.post("/mock")
 def add_mock_data(user_id: int):
     from datetime import date, timedelta
@@ -221,6 +258,62 @@ def add_mock_data(user_id: int):
     conn.commit()
     conn.close()
     return {"message": f"Mock data added for last 14 days"}
+
+@app.get("/foods/search")
+def search_foods(q: str = ""):
+    if not q.strip():
+        return []
+    conn = get_db()
+    results = conn.execute(
+        "SELECT * FROM foods WHERE name LIKE ? LIMIT 10",
+        (f"%{q}%",)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in results]
+    
+@app.post("/seed-foods")
+def seed_foods():
+    foods = [
+        ("Chicken Rice", 650, 35, 80, 15),
+        ("Nasi Lemak with Egg", 550, 18, 65, 24),
+        ("Roti Prata with Curry", 450, 12, 55, 20),
+        ("Mee Goreng", 480, 15, 60, 20),
+        ("Laksa", 550, 22, 60, 25),
+        ("Grilled Salmon with Rice", 600, 40, 50, 22),
+        ("Caesar Salad", 350, 25, 15, 22),
+        ("Protein Shake", 200, 30, 10, 5),
+        ("Banana Smoothie", 280, 8, 45, 8),
+        ("Eggs on Toast", 320, 20, 30, 14),
+        ("Nasi Padang", 750, 30, 85, 30),
+        ("Chicken Breast (grilled)", 165, 31, 0, 3.6),
+        ("White Rice (1 cup)", 206, 4.3, 45, 0.4),
+        ("Fried Egg", 90, 6, 0.6, 7),
+        ("Teh Tarik", 120, 3, 18, 4),
+        ("Kopi O", 10, 0.3, 2, 0),
+        ("Milo (1 cup)", 190, 6, 30, 5),
+        ("Char Kway Teow", 600, 20, 65, 28),
+        ("Yong Tau Foo (6 pcs)", 350, 22, 30, 14),
+        ("Fish Ball Noodles", 400, 20, 55, 10),
+        ("Satay (10 sticks)", 500, 35, 15, 34),
+        ("Prata Egg", 350, 12, 40, 16),
+        ("Chendol", 320, 3, 55, 10),
+        ("Ice Kachang", 280, 4, 60, 3),
+        ("Hokkien Mee", 550, 25, 60, 22),
+    ]
+
+    conn = get_db()
+    existing = conn.execute("SELECT COUNT(*) FROM foods").fetchone()[0]
+    if existing > 0:
+        conn.close()
+        return {"message": "Foods already seeded"}
+
+    conn.executemany(
+        "INSERT INTO foods (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)",
+        foods
+    )
+    conn.commit()
+    conn.close()
+    return {"message": f"Seeded {len(foods)} foods"}
 
 # --- Helper ---
 

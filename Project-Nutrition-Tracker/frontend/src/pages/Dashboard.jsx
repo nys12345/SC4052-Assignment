@@ -32,6 +32,28 @@ export default function Dashboard() {
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
 
+  const handleLogMeal = async (food) => {
+    try {
+      await API.post("/log-meal", {
+        user_id: user.id,
+        date: selectedDate,
+        meal_name: food.name,
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat,
+        meal_type: food.mealType || "",
+      });
+      // Refresh meals and logged days
+      const res = await API.get("/meals", { params: { user_id: user.id, date: selectedDate } });
+      setMeals(res.data);
+      const days = await API.get("/logged-days", { params: { user_id: user.id } });
+      setLoggedDays(days.data);
+    } catch (err) {
+      console.error("Failed to log meal:", err);
+    }
+  };
+
   useEffect(() => {
     const stored = localStorage.getItem("user");
     if (!stored) {
@@ -112,6 +134,7 @@ export default function Dashboard() {
             meals={meals}
             selectedDate={selectedDate}
             today={getLocalDate()}
+            onLogMeal={handleLogMeal}
           />
 
         </main>

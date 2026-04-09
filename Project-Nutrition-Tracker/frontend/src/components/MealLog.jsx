@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import LogMealModal from "./LogMealModal";
 
-export default function MealLog({ meals, selectedDate, today }) {
+export default function MealLog({ meals, selectedDate, today, onLogMeal }) {
+  const [showModal, setShowModal] = useState(false);
   const isToday = selectedDate === today;
 
   const dateLabel = isToday
@@ -12,10 +14,13 @@ export default function MealLog({ meals, selectedDate, today }) {
       });
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col flex-1">
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col flex-1 relative">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-white">{dateLabel}</h3>
-        <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer">
+        <button
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+          onClick={() => setShowModal(true)}
+        >
           + Log Meal
         </button>
       </div>
@@ -47,6 +52,16 @@ export default function MealLog({ meals, selectedDate, today }) {
             </div>
           ))}
         </div>
+      )}
+
+      {showModal && (
+        <LogMealModal
+          onClose={() => setShowModal(false)}
+          onSubmit={(meal) => {
+            setShowModal(false);
+            onLogMeal(meal);
+          }}
+        />
       )}
     </div>
   );
