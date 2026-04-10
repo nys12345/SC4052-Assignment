@@ -49,24 +49,37 @@ export default function LogMealModal({ onClose, onSubmit }) {
     });
   };
 
+  const handleSaveFood = async () => {
+    if (!form || !form.name.trim()) return;
+    try {
+      await API.post("/add-food", {
+        name: form.name,
+        calories: Number(form.calories),
+        protein: Number(form.protein),
+        carbs: Number(form.carbs),
+        fat: Number(form.fat),
+      });
+      alert("Food added successfully!");
+    } catch (err) {
+      alert("Failed to add food.");
+    }
+  };
+
   return (
     <div
       className="absolute inset-0 z-10 flex flex-col bg-black/60 rounded-2xl"
       onClick={onClose}
     >
       <div
-        className="bg-gray-900 border border-gray-800 mt-13 rounded-2xl p-6 mx-3 mb-3 flex flex-col flex-1"
+        className="relative bg-gray-900 border border-gray-800 mt-13 rounded-2xl p-6 mx-3 mb-3 flex flex-col min-h-0 flex-1 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-gray-500">Search for a food to get started.</p>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer text-lg"
-          >
-            ✕
-          </button>
-      </div>
+        <button
+          onClick={onClose}
+          className="absolute top-1 right-2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer text-lg z-20"
+        >
+          ✕
+        </button>
         {/* Search */}
         <div className="relative">
           <input
@@ -114,7 +127,6 @@ export default function LogMealModal({ onClose, onSubmit }) {
                 type="text"
                 value={form?.name ?? ""}
                 onChange={(e) => updateForm("name", e.target.value)}
-                disabled={!form}
                 placeholder="Select a food above"
                 className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-white placeholder-gray-600 text-sm focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-40"
                 />
@@ -125,8 +137,7 @@ export default function LogMealModal({ onClose, onSubmit }) {
                 <input
                 type="number"
                 value={form?.calories ?? ""}
-                onChange={(e) => updateForm("calories", e.target.value)}
-                disabled={!form}
+                onChange={(e) => updateForm("calories", e.target.value)} 
                 className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-40"
                 />
             </div>
@@ -145,7 +156,6 @@ export default function LogMealModal({ onClose, onSubmit }) {
                     type="number"
                     value={form?.[key] ?? ""}
                     onChange={(e) => updateForm(key, e.target.value)}
-                    disabled={!form}
                     className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-40"
                     />
                 </div>
@@ -155,25 +165,45 @@ export default function LogMealModal({ onClose, onSubmit }) {
             <div className="mt-3">
               <label className="block text-xs text-gray-400 uppercase tracking-wider mb-1.5">Tags</label>
               <div className="flex gap-2 flex-wrap">
-                {["Breakfast", "Lunch", "Dinner", "Supper", "Snack"].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    disabled={!form}
-                    onClick={() => updateForm("mealType", form?.mealType === type ? "" : type)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-40 ${
-                      form?.mealType === type
-                        ? "bg-indigo-600/20 border border-indigo-500 text-indigo-300"
-                        : "bg-gray-950 border border-gray-800 text-gray-500 hover:border-gray-600"
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
+                {[
+                  { type: "Breakfast", active: "bg-amber-600/20 border-amber-500 text-amber-300" },
+                  { type: "Lunch",     active: "bg-emerald-600/20 border-emerald-500 text-emerald-300" },
+                  { type: "Dinner",    active: "bg-blue-600/20 border-blue-500 text-blue-300" },
+                  { type: "Supper",    active: "bg-purple-600/20 border-purple-500 text-purple-300" },
+                  { type: "Snack",     active: "bg-rose-600/20 border-rose-500 text-rose-300" },
+                ].map(({ type, active }) => {
+                  const selected = form?.mealType === type;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => updateForm("mealType", selected ? "" : type)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-40 border ${
+                        selected
+                          ? active
+                          : "bg-gray-950 border-gray-800 text-gray-500 hover:border-gray-600"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="mt-auto pt-4 flex justify-end">
+            <div className="mt-auto pt-4 flex justify-end gap-2">
+                <button
+                  onClick={handleSaveFood}
+                  disabled={!form}
+                  className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+                    form
+                      ? "bg-gray-700 hover:bg-gray-600 text-white"
+                      : "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  }`}
+                >
+                  Add Food
+                </button>
+
                 <button
                 onClick={handleSubmit}
                 disabled={!form}

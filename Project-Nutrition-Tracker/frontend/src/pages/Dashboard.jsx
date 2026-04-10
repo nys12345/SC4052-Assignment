@@ -54,6 +54,18 @@ export default function Dashboard() {
     }
   };
 
+  const handleEditMeal = async (updatedMeal) => {
+    try {
+      await API.put(`/meals/${updatedMeal.id}`, updatedMeal);
+      const res = await API.get("/meals", { params: { user_id: user.id, date: selectedDate } });
+      setMeals(res.data);
+      const days = await API.get("/logged-days", { params: { user_id: user.id } });
+      setLoggedDays(days.data);
+    } catch (err) {
+      console.error("Failed to update meal:", err);
+    }
+  };
+
   useEffect(() => {
     const stored = localStorage.getItem("user");
     if (!stored) {
@@ -135,6 +147,7 @@ export default function Dashboard() {
             selectedDate={selectedDate}
             today={getLocalDate()}
             onLogMeal={handleLogMeal}
+            onEdit={handleEditMeal}
           />
 
         </main>

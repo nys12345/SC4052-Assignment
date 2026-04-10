@@ -1,7 +1,8 @@
 import { useState } from "react";
 import LogMealModal from "./LogMealModal";
+import MealCard from "./MealCard";
 
-export default function MealLog({ meals, selectedDate, today, onLogMeal }) {
+export default function MealLog({ meals, selectedDate, today, onLogMeal, onEdit }) {
   const [showModal, setShowModal] = useState(false);
   const isToday = selectedDate === today;
 
@@ -12,9 +13,19 @@ export default function MealLog({ meals, selectedDate, today, onLogMeal }) {
         month: "short",
         day: "numeric",
       });
+  
+  const tagOrder = ["Breakfast", "Lunch", "Dinner", "Supper", "Snack"];
+
+  const sortedMeals = [...meals].sort((a, b) => {
+    const aIdx = tagOrder.indexOf(a.meal_type);
+    const bIdx = tagOrder.indexOf(b.meal_type);
+    const aOrder = aIdx === -1 ? tagOrder.length : aIdx;
+    const bOrder = bIdx === -1 ? tagOrder.length : bIdx;
+    return aOrder - bOrder;
+  });
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col flex-1 relative">
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col flex-1 relative min-h-0">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-white">{dateLabel}</h3>
         <button
@@ -34,22 +45,9 @@ export default function MealLog({ meals, selectedDate, today, onLogMeal }) {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
-          {meals.map((meal, i) => (
-            <div
-              key={meal.id ?? i}
-              className="flex items-center justify-between px-4 py-3 bg-gray-950 border border-gray-800 rounded-lg"
-            >
-              <div>
-                <p className="text-sm text-white font-medium">{meal.meal_name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  P {meal.protein}g · C {meal.carbs}g · F {meal.fat}g
-                </p>
-              </div>
-              <span className="text-sm font-semibold text-indigo-400">
-                {meal.calories} kcal
-              </span>
-            </div>
+        <div className="flex flex-col gap-3 flex-1 overflow-y-auto min-h-0 scrollbar-hide">
+          {sortedMeals.map((meal, i) => (
+            <MealCard key={meal.id ?? i} meal={meal} onEdit={onEdit}/>
           ))}
         </div>
       )}

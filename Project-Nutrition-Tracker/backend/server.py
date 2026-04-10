@@ -57,6 +57,7 @@ def init_db():
             protein REAL,
             carbs REAL,
             fat REAL,
+            meal_type TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
@@ -108,7 +109,22 @@ class LogMealRequest(BaseModel):
     protein: float
     carbs: float
     fat: float
-    meal_type: str
+    meal_type: str = ""
+
+class AddFoodRequest(BaseModel):
+    name: str
+    calories: float
+    protein: float = 0
+    carbs: float = 0
+    fat: float = 0
+
+class UpdateMealRequest(BaseModel):
+    meal_name: str
+    calories: float
+    protein: float
+    carbs: float
+    fat: float
+    meal_type: str = ""
 
 # --- Routes ---
 
@@ -217,12 +233,34 @@ def get_logged_days(user_id: int):
 def log_meal(req: LogMealRequest):
     conn = get_db()
     conn.execute(
-        "INSERT INTO meal_logs (user_id, date, meal_name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (req.user_id, req.date, req.meal_name, req.calories, req.protein, req.carbs, req.fat)
+        "INSERT INTO meal_logs (user_id, date, meal_name, calories, protein, carbs, fat, meal_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (req.user_id, req.date, req.meal_name, req.calories, req.protein, req.carbs, req.fat, req.meal_type)
     )
     conn.commit()
     conn.close()
     return {"message": "Meal logged"}
+
+@app.post("/add-food")
+def add_food(req: AddFoodRequest):
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO foods (name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?)",
+        (req.name, req.calories, req.protein, req.carbs, req.fat)
+    )
+    conn.commit()
+    conn.close()
+    return {"message": "Food saved"}
+
+@app.put("/meals/{meal_id}")
+def update_meal(meal_id: int, req: UpdateMealRequest):
+    conn = get_db()
+    conn.execute(
+        "UPDATE meal_logs SET meal_name=?, calories=?, protein=?, carbs=?, fat=?, meal_type=? WHERE id=?",
+        (req.meal_name, req.calories, req.protein, req.carbs, req.fat, req.meal_type, meal_id)
+    )
+    conn.commit()
+    conn.close()
+    return {"message": "Meal updated"}
 
 @app.post("/mock")
 def add_mock_data(user_id: int):
