@@ -40,12 +40,12 @@ export default function LogMealModal({ onClose, onSubmit }) {
   const handleSubmit = () => {
     if (!form || !form.name.trim()) return;
     onSubmit({
-      ...form,
+      meal_name: form.name,
       calories: Number(form.calories),
       protein: Number(form.protein),
       carbs: Number(form.carbs),
       fat: Number(form.fat),
-      mealType: form.mealType || "",
+      meal_type: form.mealType || "",
     });
   };
 

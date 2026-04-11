@@ -2,7 +2,7 @@ import { useState } from "react";
 import LogMealModal from "./LogMealModal";
 import MealCard from "./MealCard";
 
-export default function MealLog({ meals, selectedDate, today, onLogMeal, onEdit }) {
+export default function MealLog({ meals, selectedDate, today, onLogMeal, onEdit, onDelete }) {
   const [showModal, setShowModal] = useState(false);
   const isToday = selectedDate === today;
 
@@ -47,7 +47,14 @@ export default function MealLog({ meals, selectedDate, today, onLogMeal, onEdit 
       ) : (
         <div className="flex flex-col gap-3 flex-1 overflow-y-auto min-h-0 scrollbar-hide">
           {sortedMeals.map((meal, i) => (
-            <MealCard key={meal.id ?? i} meal={meal} onEdit={onEdit}/>
+            <MealCard 
+              key={meal.id ?? i} 
+              meal={meal} 
+              onEdit={onEdit} 
+              onDelete={() => {
+                if (window.confirm("Delete this meal?")) onDelete(meal.id);
+              }}
+            />
           ))}
         </div>
       )}

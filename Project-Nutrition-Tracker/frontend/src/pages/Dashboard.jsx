@@ -37,12 +37,7 @@ export default function Dashboard() {
       await API.post("/log-meal", {
         user_id: user.id,
         date: selectedDate,
-        meal_name: food.name,
-        calories: food.calories,
-        protein: food.protein,
-        carbs: food.carbs,
-        fat: food.fat,
-        meal_type: food.mealType || "",
+        ...food,
       });
       // Refresh meals and logged days
       const res = await API.get("/meals", { params: { user_id: user.id, date: selectedDate } });
@@ -64,6 +59,11 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Failed to update meal:", err);
     }
+  };
+
+  const handleDelete = async (mealId) => {
+    await API.delete(`/meals/${mealId}`);
+    setMeals((prev) => prev.filter((m) => m.id !== mealId));
   };
 
   useEffect(() => {
@@ -148,6 +148,7 @@ export default function Dashboard() {
             today={getLocalDate()}
             onLogMeal={handleLogMeal}
             onEdit={handleEditMeal}
+            onDelete={handleDelete}
           />
 
         </main>

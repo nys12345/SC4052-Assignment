@@ -262,6 +262,14 @@ def update_meal(meal_id: int, req: UpdateMealRequest):
     conn.close()
     return {"message": "Meal updated"}
 
+@app.delete("/meals/{meal_id}")
+def delete_meal(meal_id: int):
+    conn = get_db()
+    conn.execute("DELETE FROM meal_logs WHERE id = ?", (meal_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "Meal deleted"}
+
 @app.post("/mock")
 def add_mock_data(user_id: int):
     from datetime import date, timedelta
