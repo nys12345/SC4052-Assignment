@@ -25,9 +25,9 @@ export default function Dashboard() {
   const consumed = meals.reduce(
     (totals, meal) => ({
       calories: totals.calories + meal.calories,
-      protein: totals.protein + meal.protein,
-      carbs: totals.carbs + meal.carbs,
-      fat: totals.fat + meal.fat,
+      protein: Math.round((totals.protein + meal.protein) * 10) / 10,
+      carbs: Math.round((totals.carbs + meal.carbs) * 10) / 10,
+      fat: Math.round((totals.fat + meal.fat) * 10) / 10,
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );

@@ -3,6 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
 import hashlib
+import base64
+from google import genai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI()
 
@@ -96,10 +103,10 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
-class AnalyzeRequest(BaseModel):
-    meal: str
-    user_id: int
-    date: str
+class AnalyseRequest(BaseModel):
+    query: str = ""
+    image_base64: str = ""
+    image_type: str = ""
 
 class LogMealRequest(BaseModel):
     user_id: int
@@ -188,24 +195,40 @@ def login(req: LoginRequest):
         }
     }
 
-@app.post("/analyze")
-def analyze(req: AnalyzeRequest):
-    # TODO: Replace with actual LLM call
-    result = {
-        "meal_name": req.meal,
-        "calories": 550,
-        "protein": 35.0,
-        "carbs": 60.0,
-        "fat": 18.0,
-    }
+@app.post("/analyse")
+def analyse(req: AnalyseRequest):
+    import json
 
-    conn = get_db()
-    conn.execute(
-        "INSERT INTO meal_logs (user_id, date, meal_name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (req.user_id, req.date, result["meal_name"], result["calories"], result["protein"], result["carbs"], result["fat"])
-    )
-    conn.commit()
-    conn.close()
+    prompt = """You are a nutrition estimator. Analyze the food and return ONLY a JSON object with no markdown, no explanation.
+
+Rules:
+- Estimate for one typical serving
+- calories must be an integer
+- protein, carbs, fat in grams rounded to 1 decimal
+- name should be concise
+
+{"name": "...", "calories": 0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}"""
+
+    if req.image_base64:
+        import PIL.Image, io
+        img_bytes = base64.b64decode(req.image_base64)
+        img = PIL.Image.open(io.BytesIO(img_bytes))
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[prompt, img]
+        )
+    elif req.query:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=f"{prompt}\n\nFood: {req.query}"
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Provide a query or image")
+
+    try:
+        result = json.loads(response.text)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Failed to parse AI response")
 
     return result
 
@@ -262,6 +285,18 @@ def update_meal(meal_id: int, req: UpdateMealRequest):
     conn.close()
     return {"message": "Meal updated"}
 
+@app.get("/foods/search")
+def search_foods(q: str = ""):
+    if not q.strip():
+        return []
+    conn = get_db()
+    results = conn.execute(
+        "SELECT * FROM foods WHERE name LIKE ? LIMIT 10",
+        (f"%{q}%",)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in results]
+
 @app.delete("/meals/{meal_id}")
 def delete_meal(meal_id: int):
     conn = get_db()
@@ -297,25 +332,13 @@ def add_mock_data(user_id: int):
         chosen = random.sample(meals, num_meals)
         for meal_name, cal, protein, carbs, fat in chosen:
             conn.execute(
-                "INSERT INTO meal_logs (user_id, date, meal_name, calories, protein, carbs, fat) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (user_id, d, meal_name, cal, protein, carbs, fat)
+                "INSERT INTO meal_logs (user_id, date, meal_name, calories, protein, carbs, fat, meal_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (user_id, d, meal_name, cal, protein, carbs, fat, "")
             )
 
     conn.commit()
     conn.close()
     return {"message": f"Mock data added for last 14 days"}
-
-@app.get("/foods/search")
-def search_foods(q: str = ""):
-    if not q.strip():
-        return []
-    conn = get_db()
-    results = conn.execute(
-        "SELECT * FROM foods WHERE name LIKE ? LIMIT 10",
-        (f"%{q}%",)
-    ).fetchall()
-    conn.close()
-    return [dict(r) for r in results]
     
 @app.post("/seed-foods")
 def seed_foods():

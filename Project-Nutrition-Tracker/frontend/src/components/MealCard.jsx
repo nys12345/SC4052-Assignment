@@ -25,7 +25,7 @@ export default function MealCard({ meal, onEdit, onDelete }) {
 
   if (editing) {
     return (
-        <div className="relative grid grid-cols-[1fr_15rem_8rem_3rem] items-center pl-4 min-h-16 shrink-0 bg-gray-950 border border-indigo-500/50 rounded-lg">
+        <div className="relative grid grid-cols-[1fr_15rem_8rem_3rem] items-center pl-4 min-h-17 shrink-0 bg-gray-950 border border-indigo-500/50 rounded-lg">
           {/* Name + Tag */}
           <div className="min-w-0 flex flex-col items-start gap-y-1">
             <input
@@ -83,16 +83,16 @@ export default function MealCard({ meal, onEdit, onDelete }) {
           </div>
 
           {/* Save / Cancel / Delete */}
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-0.5">
             <button
               onClick={handleSave}
-              className="text-emerald-500 hover:text-emerald-300 transition-colors cursor-pointer text-xs"
+              className="text-emerald-500 hover:text-emerald-300 transition-colors cursor-pointer text-lg"
             >
               ✓
             </button>
             <button
               onClick={() => { setForm({ ...meal }); setEditing(false); }}
-              className="text-gray-600 hover:text-gray-300 transition-colors cursor-pointer text-xs"
+              className="text-gray-600 hover:text-gray-300 transition-colors cursor-pointer text-lg"
             >
               ✕
             </button>
@@ -101,7 +101,7 @@ export default function MealCard({ meal, onEdit, onDelete }) {
     );
   }
   return (
-    <div className="grid grid-cols-[1fr_15rem_8rem_3rem] items-center pl-4 min-h-16 shrink-0 bg-gray-950 border border-gray-800 rounded-lg">
+    <div className="grid grid-cols-[1fr_15rem_8rem_3rem] items-center pl-4 min-h-17 shrink-0 bg-gray-950 border border-gray-800 rounded-lg">
       {/* Name + Tag */}
       <div className="min-w-0 flex flex-col items-start gap-y-1">
         <p className="text-sm text-white font-medium truncate border-b border-transparent">{meal.meal_name}</p>

@@ -8,3 +8,6 @@ __pycache__/
 
 # todo file
 todo.txt
+
+# Environment variables
+.env

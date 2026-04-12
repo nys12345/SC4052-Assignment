@@ -1,10 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import API from "../API";
 
 export default function LogMealModal({ onClose, onSubmit }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [form, setForm] = useState(null);
+  
+  const [llmQuery, setLlmQuery] = useState("");
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!query.trim() || form) {
@@ -65,6 +71,58 @@ export default function LogMealModal({ onClose, onSubmit }) {
     }
   };
 
+  const handleImageUpload = async (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target.result;
+      const base64 = dataUrl.split(",")[1];
+      const imageType = file.type;
+
+      setImagePreview(dataUrl);
+      setImageLoading(true);
+      try {
+        const res = await API.post("/analyse", {
+          image_base64: base64,
+          image_type: imageType,
+        });
+        setForm({
+          name: res.data.name,
+          calories: res.data.calories,
+          protein: res.data.protein,
+          carbs: res.data.carbs,
+          fat: res.data.fat,
+          mealType: "",
+        });
+      } catch {
+        alert("Couldn't identify the food. Fill in manually.");
+      } finally {
+        setImageLoading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLlmSearch = async () => {
+    if (!llmQuery.trim()) return;
+    setLlmLoading(true);
+    try {
+      const res = await API.post("/analyse", { query: llmQuery });
+      setForm({
+        name: res.data.name,
+        calories: res.data.calories,
+        protein: res.data.protein,
+        carbs: res.data.carbs,
+        fat: res.data.fat,
+        mealType: "",
+      });
+    } catch {
+      alert("Couldn't analyse the food. Try again.");
+    } finally {
+      setLlmLoading(false);
+    }
+  };
+
   return (
     <div
       className="absolute inset-0 z-10 flex flex-col bg-black/60 rounded-2xl"
@@ -111,10 +169,74 @@ export default function LogMealModal({ onClose, onSubmit }) {
         </div>
 
         {/* Left / Right split */}
-        <div className="flex gap-4 mt-4 flex-1">
+        <div className="flex gap-4 mt-4 flex-1 min-h-0">
 
           {/* LEFT — Summary + Submit */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Image Drop Zone */}
+            <div
+              className={`flex-1 h-0 border-2 border-dashed rounded-xl flex items-center justify-center transition-colors cursor-pointer overflow-hidden
+                ${imagePreview ? "border-indigo-500/50 bg-indigo-600/5" : "border-gray-800 hover:border-gray-600 bg-gray-950/40"}
+              `}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); handleImageUpload(e.dataTransfer.files[0]); }}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageUpload(e.target.files[0])}
+              />
+                {imagePreview ? (
+                  <div className="flex flex-col w-full h-full p-3 min-h-0">
+                    <div className="flex items-center shrink-0">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-400">Image uploaded</span>
+                        {imageLoading
+                          ? <span className="text-xs text-indigo-400 animate-pulse">Identifying food...</span>
+                          : <span className="text-xs text-emerald-400">✓ Done</span>
+                        }
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setImagePreview(null); setForm(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                        className="ml-auto mr-2 text-gray-600 hover:text-gray-300 text-sm cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <img src={imagePreview} alt="Food preview" className="flex-1 min-h-0 w-full mt-2 rounded-lg" />
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-600">
+                    Drop a photo of your food here, or click to upload
+                  </span>
+                )}
+            </div>
+
+            {/* LLM Text Search */}
+            <div className="flex gap-2 mt-3 shrink-0">
+              <input
+                type="text"
+                value={llmQuery}
+                onChange={(e) => setLlmQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLlmSearch()}
+                placeholder="Or describe your meal"
+                className="flex-1 px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-lg text-white placeholder-gray-600 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+              <button
+                onClick={handleLlmSearch}
+                disabled={llmLoading || !llmQuery.trim()}
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                  llmLoading || !llmQuery.trim()
+                    ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                    : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                }`}
+              >
+                {llmLoading ? "Analysing..." : "Analyse"}
+              </button>
+            </div>
 
           </div>
 
@@ -127,7 +249,6 @@ export default function LogMealModal({ onClose, onSubmit }) {
                 type="text"
                 value={form?.name ?? ""}
                 onChange={(e) => updateForm("name", e.target.value)}
-                placeholder="Select a food above"
                 className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-lg text-white placeholder-gray-600 text-sm focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-40"
                 />
             </div>
