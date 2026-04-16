@@ -23,7 +23,22 @@ function App() {
   };
 
   const handleGuest = () => {
-    console.log("Continue as guest");
+    const guestUser = {
+      id: 0,
+      username: "Guest",
+      age: 25,
+      gender: "male",
+      height: 170,
+      weight: 70,
+      activityLevel: "moderate",
+      goal: "maintain",
+      bmi: 24.2,
+      bmr: 1648,
+      tdee: 2554,
+      dailyCalories: 2554,
+    };
+    localStorage.setItem("user", JSON.stringify(guestUser));
+    navigate("/dashboard");
   };
 
   return (

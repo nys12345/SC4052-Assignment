@@ -9,7 +9,18 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+# Top of server.py
+client = None
+try:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key:
+        client = genai.Client(api_key=api_key)
+except Exception as e:
+    print(f"⚠️  Gemini client init failed: {e}")
+    client = None
+
+# change model here if needed
+GEMINI_MODEL = "gemini-2.5-flash"
 
 app = FastAPI()
 
@@ -24,7 +35,7 @@ app.add_middleware(
 )
 
 
-# --- Database Setup ---
+# Database Setup
 
 def get_db():
     conn = sqlite3.connect("database.db")
@@ -87,7 +98,7 @@ def init_db():
 init_db()
 
 
-# --- Request Models ---
+# Request Models
 
 class SignUpRequest(BaseModel):
     username: str
@@ -133,7 +144,7 @@ class UpdateMealRequest(BaseModel):
     fat: float
     meal_type: str = ""
 
-# --- Routes ---
+# Routes
 
 @app.get("/")
 def root():
@@ -199,27 +210,27 @@ def login(req: LoginRequest):
 def analyse(req: AnalyseRequest):
     import json
 
-    prompt = """You are a nutrition estimator. Analyze the food and return ONLY a JSON object with no markdown, no explanation.
+    prompt = """You are a nutrition estimator. Analyse the food and return ONLY a JSON object with no markdown, no explanation.
 
-Rules:
-- Estimate for one typical serving
-- calories must be an integer
-- protein, carbs, fat in grams rounded to 1 decimal
-- name should be concise
+    Rules:
+    - Estimate for one typical serving
+    - calories must be an integer
+    - protein, carbs, fat in grams rounded to 1 decimal
+    - name should be concise
 
-{"name": "...", "calories": 0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}"""
+    {"name": "...", "calories": 0, "protein": 0.0, "carbs": 0.0, "fat": 0.0}"""
 
     if req.image_base64:
         import PIL.Image, io
         img_bytes = base64.b64decode(req.image_base64)
         img = PIL.Image.open(io.BytesIO(img_bytes))
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=GEMINI_MODEL,
             contents=[prompt, img]
         )
     elif req.query:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=GEMINI_MODEL,
             contents=f"{prompt}\n\nFood: {req.query}"
         )
     else:
@@ -384,7 +395,7 @@ def seed_foods():
     conn.close()
     return {"message": f"Seeded {len(foods)} foods"}
 
-# --- Helper ---
+# Helper Functions
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()

@@ -82,7 +82,7 @@ export default function MealCard({ meal, onEdit, onDelete }) {
             <span className="text-sm font-semibold text-indigo-400">kcal</span>
           </div>
 
-          {/* Save / Cancel / Delete */}
+          {/* Save / Cancel */}
           <div className="flex flex-col items-center gap-0.5">
             <button
               onClick={handleSave}

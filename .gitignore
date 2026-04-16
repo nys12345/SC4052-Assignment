@@ -6,8 +6,5 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# todo file
-todo.txt
-
 # Environment variables
 .env

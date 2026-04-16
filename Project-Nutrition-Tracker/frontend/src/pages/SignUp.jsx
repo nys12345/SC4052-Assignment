@@ -248,6 +248,7 @@ function SignUp() {
                   <div className="space-y-2">
                     {[
                       { id: "lose_weight", label: "Lose Weight", icon: "🔥", desc: "Caloric deficit plan" },
+                      { id: "maintain", label: "Maintain Weight", icon: "⚖️", desc: "Stay at current weight" },
                       { id: "gain_weight", label: "Gain Weight", icon: "📈", desc: "Caloric surplus plan" },
                     ].map((goal) => (
                       <button

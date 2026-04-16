@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 import DailyNutritionTab from "../components/DailyNutritionTab";
 import MealLog from "../components/MealLog";
 
-// ── Main Dashboard ─────────────────────────────────────────
+// Main Dashboard 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -101,7 +101,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-950">
 
-      {/* ── Top Bar ─────────────────────────────── */}
+      {/* Top Bar */}
       <header className="border-b border-gray-800/60 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -120,10 +120,10 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* ── Content ─────────────────────────────── */}
+      {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8 flex gap-6 min-h-[calc(100vh-7rem)]">
 
-        {/* ── LEFT: Sidebar Component ─────────── */}
+        {/* LEFT: Sidebar Component */}
         <Sidebar
           user={user}
           consumed={consumed.calories}
@@ -133,7 +133,7 @@ export default function Dashboard() {
           today={getLocalDate()}
         />
 
-        {/* ── RIGHT: Main Area ──────────────────── */}
+        {/* RIGHT: Main Area */}
         <main className="flex-2 min-w-0 flex flex-col gap-6 self-start sticky top-20 h-[calc(100vh-8rem)]">
 
           <DailyNutritionTab
